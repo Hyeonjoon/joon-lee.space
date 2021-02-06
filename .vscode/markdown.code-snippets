@@ -9,8 +9,8 @@
       "thumbnailUrl: $5",
       "category: $6",
       "tags: [$7]",
-      "created_at: ${8:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE}",
-      "updated_at: ${9:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE}",
+      "createdAt: ${8:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE}",
+      "updatedAt: ${9:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE}",
       "---"
     ],
     "description": "Add Meta Data"
