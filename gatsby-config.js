@@ -1,7 +1,7 @@
 module.exports = {
   siteMetadata: {
     title: 'Joon Blog',
-    author: 'Joon (현준)',
+    author: 'Joon Lee',
     description:
       'Joon Blog',
     siteUrl: 'https://joon-lee.space',

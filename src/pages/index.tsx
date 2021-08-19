@@ -9,8 +9,8 @@ const IndexPage = ({ location, data }) => {
     allMdx: { nodes: posts },
   } = data
 
-  const title = 'Writing'
-  const description = 'Sample'
+  const title = 'Writings'
+  const description = '강남언니, Healingpaper from 2020.09. Backend, Java, Spring.'
 
   return (
     <>
