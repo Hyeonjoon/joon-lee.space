@@ -1,9 +1,9 @@
 module.exports = {
   siteMetadata: {
-    title: 'Joon Blog',
+    title: 'Joon\'s Blog',
     author: 'Joon Lee',
     description:
-      'Joon Blog',
+      'Joon\'s Blog',
     siteUrl: 'https://joon-lee.space',
     profileUrl: '/images/profile.png',
     thumbnailUrl: '/images/new-thumbnail.png',

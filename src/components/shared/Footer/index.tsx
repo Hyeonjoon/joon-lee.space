@@ -1,5 +1,5 @@
 import React from 'react'
-import { GitHub, Rss } from 'react-feather'
+import { GitHub, Linkedin, Mail, Rss } from 'react-feather'
 
 const Footer = () => {
   return (
@@ -9,6 +9,18 @@ const Footer = () => {
         <div className="flex justify-end space-x-1 py-2">
           <a href="https://github.com/Hyeonjoon/" target="_blank">
             <GitHub
+              className="p-2 hover:text-primary-darken transition duration-500"
+              size="38px"
+            />
+          </a>
+          <a href="https://www.linkedin.com/in/hyeonjoon-lee/" target="_blank">
+            <Linkedin
+              className="p-2 hover:text-primary-darken transition duration-500"
+              size="38px"
+            />
+          </a>
+          <a href="mailto:joon.lee.private@gmail.com" target="_blank">
+            <Mail
               className="p-2 hover:text-primary-darken transition duration-500"
               size="38px"
             />

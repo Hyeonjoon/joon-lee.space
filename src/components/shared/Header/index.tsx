@@ -8,7 +8,7 @@ const Header = ({ location: { pathname } }) => {
         <div>
           <Link to="/">
             <h1 className="text-xl md:text-2xl font-bold">
-              Joon Blog
+              Joon's Blog
               <span className="text-primary text-3xl ml-1 leading-4">,</span>
             </h1>
           </Link>
@@ -21,7 +21,7 @@ const Header = ({ location: { pathname } }) => {
                   pathname.includes('/') ? 'border-primary' : ''
                 }`}
               >
-                Writing
+                Writings
               </li>
             </Link>
           </ol>
