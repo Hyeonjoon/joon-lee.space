@@ -5,7 +5,7 @@ module.exports = {
     description:
       'Joon\'s Blog',
     siteUrl: 'https://joon-lee.space',
-    profileUrl: '/images/profile.png',
+    profileUrl: '/images/profile.jpg',
     thumbnailUrl: '/images/new-thumbnail.png',
 
     links: {
