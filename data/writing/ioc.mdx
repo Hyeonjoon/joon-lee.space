@@ -26,19 +26,19 @@ updatedAt: 2023-02-03 21:29
 성과형 광고 시스템을 설계하기 위해 광고 도메인 전문가와 대화하면서, 성과형 광고에는 ‘캠페인’이라는 개념이 있다는 것을 알게 되었습니다. 캠페인은 성과형 광고의 최상위 개념으로, 병원 관계자는 캠페인에 이름을 부여하고, 캠페인을 통해 예산을 관리합니다. 또한, 캠페인을 켜고 끄면서 광고의 노출 여부를 제어합니다. 예산 초과 여부, 광고할 상품의 상태 유효 여부 등에 따라 캠페인의 광고 노출 가능 여부는 달라지는데, 이 정보 역시 캠페인에 담깁니다. 즉, 광고 노출이 가능한 상태이면서, 병원 관계자가 캠페인을 켜 둔 경우에만 유저에게 광고를 노출할 수 있습니다.
 ```java
 public final class Campaign {
-	private final UUID id; // 캠페인 식별자
-	private final long hospitalId; // 병원 식별자
-	private String name; // 병원 관계자가 부여한 캠페인 이름
-	private Budget budget; // 예산
-	private Status status; // 병원 관계자가 제어하는 캠페인 상태
-	private boolean isAdExposureAvailable; // 광고 노출 가능 여부
+    private final UUID id; // 캠페인 식별자
+    private final long hospitalId; // 병원 식별자
+    private String name; // 병원 관계자가 부여한 캠페인 이름
+    private Budget budget; // 예산
+    private Status status; // 병원 관계자가 제어하는 캠페인 상태
+    private boolean isAdExposureAvailable; // 광고 노출 가능 여부
 
-	public enum Status {
-		SWITCHED_ON,
-		SWITCHED_OFF,
-		DELETED,
-	}
-	...
+    public enum Status {
+        SWITCHED_ON,
+        SWITCHED_OFF,
+        DELETED,
+    }
+    ...
 }
 ```
 [애그리거트 패턴(Aggregate Pattern)](https://martinfowler.com/bliki/DDD_Aggregate.html)을 이용해 캠페인을 만듭니다. 캠페인은 풍부한 도메인 모델(Rich Domain Model, [Anemic Domain Model](https://martinfowler.com/bliki/AnemicDomainModel.html)과 대치)로, 캠페인의 상태를 변경하는 명령은 캠페인 애그리거트 내에 캡슐화되고, 캠페인 애그리거트 스스로 본인의 무결성을 책임지게 됩니다. 캠페인 식별자, 병원 식별자와 같이 변하지 않아야 하는 값은 불변 필드로, 변할 수 있는 값은 가변 필드로 구성합니다. 캠페인 하위에는 ‘광고 그룹’, ‘타겟팅’, ‘광고’와 같은 개념이 종속되는데, 이들은 캠페인과는 다른 생명 주기를 가져 별개의 애그리거트로 구성했습니다.
@@ -47,11 +47,11 @@ public final class Campaign {
 병원 관계자가 어드민을 통해 캠페인을 켜고 끌 수 있도록 하려고 합니다. 캠페인을 켜는 명령을 `SwitchOnCampaign`이라고 이름 지었습니다.
 ```java
 public final class SwitchOnCampaign {
-	private final UUID id;
+    private final UUID id;
 
-	public SwitchOnCampaign(UUID id) {
-		this.id = id;
-	}
+    public SwitchOnCampaign(UUID id) {
+        this.id = id;
+    }
 }
 ```
 <br />
@@ -63,19 +63,19 @@ public final class SwitchOnCampaign {
 `Service`, 혹은 `Data`, `Info`와 같은 접미어는 객체의 역할을 다소 모호하게 만들 수 있기 때문에 `SwitchOnCampaignCommandExecutor라고` 이름 짓겠습니다. 도메인 모델을 데이터베이스와 같은 영속 장치 관련 컨텍스트와 분리하기 위해 [리파지토리 패턴(Repository Pattern)](https://martinfowler.com/eaaCatalog/repository.html)을 사용합니다.
 ```java
 public final class SwitchOnCampaignCommandExecutor {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void execute(SwitchOnCampaign command) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.switchOn(command);
-		repository.update(campaign);
-	}
+    public void execute(SwitchOnCampaign command) {
+        Campaign campaign = repository.find(command.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.switchOn(command);
+        repository.update(campaign);
+    }
 }
 ```
 명령 실행기는 리파지토리로부터 캠페인을 읽어와, 캠페인에게 명령을 전달합니다. 이후 변경된 캠페인을 리파지토리로 저장합니다.
@@ -84,21 +84,21 @@ public final class SwitchOnCampaignCommandExecutor {
 ```java
 public final class Campaign {
 
-	private final UUID id;
-	private final long hospitalId;
-	private Status status;
-	...
-	private final List<ICampaignEvent<? extends ICampaignEventPayload>> events = new ArrayList<>();
+    private final UUID id;
+    private final long hospitalId;
+    private Status status;
+    ...
+    private final List<ICampaignEvent<? extends ICampaignEventPayload>> events = new ArrayList<>();
 
-	public void switchOn(SwitchOnCampaign command) {
-		if (this.status.equals(Status.DELETED)) {
-			throw new InvariantViolationException();
-		}
-		if (!this.status.equals(Status.SWITCHED_ON)) {
-			this.status = Status.SWITCHED_ON;
-			this.events.add(new CampaignSwitchedOn(...))
-		}
-	}
+    public void switchOn(SwitchOnCampaign command) {
+        if (this.status.equals(Status.DELETED)) {
+            throw new InvariantViolationException();
+        }
+        if (!this.status.equals(Status.SWITCHED_ON)) {
+            this.status = Status.SWITCHED_ON;
+            this.events.add(new CampaignSwitchedOn(...))
+        }
+    }
 }
 ```
 캠페인은 `SwitchOnCampaign` 명령을 받아 처리합니다. 명령이 유효한지를 검사하고, 캠페인의 상태가 `SWITCHED_ON` 상태가 되는 경우 `CampaignSwitchedOn`이라는 도메인 이벤트를 생성해, 자체 Collection에 저장합니다. 이 도메인 이벤트는 이후 외부 메시지 브로커로 전달되는데, 리파지토리가 그 준비 과정을 책임집니다. 이벤트 발행 과정에 대해서는 이후 다른 글에서 자세하게 다루겠습니다. 
@@ -107,8 +107,8 @@ public final class Campaign {
 강남언니 유저들은 화면에 노출된 광고를 클릭할 수 있습니다. 노출, 클릭과 같은 성과가 발생하면, 병원은 그에 따른 광고비를 강남언니에 지불합니다. 만약 캠페인의 예산이 소진되면, 캠페인의 광고 노출이 불가능하도록 해야 합니다. ‘캠페인의 예산 소진됨’ 이벤트를 `BudgetExhausted`로 이름 지었습니다.
 ```java
 public final class BudgetExhausted implements ICampaignEvent<BudgetExhaustedEventPayload>{
-	private final UUID id;
-	...
+    private final UUID id;
+    ...
 }
 ```
 <br />
@@ -116,19 +116,19 @@ public final class BudgetExhausted implements ICampaignEvent<BudgetExhaustedEven
 도메인 이벤트가 외부 메시지 브로커로 전달되면, 메시지 브로커를 폴링하는 응용 프로그램 계층 내 메시지 리스너에 의해 시스템에 도착하게 됩니다. 리스너는 메시지를 도메인 이벤트로 정제해, 도메인 이벤트 처리기로 전달합니다. 이 도메인 이벤트 처리기 중 하나인 예산 소진됨 이벤트 처리기를 생성합니다. 이름은 `BudgetExhaustedEventHandler`로, 앞서 살펴 본 명령 실행기와 동일하게 영속 장치의 특성과는 무관하게 설계된 리파지토리 인터페이스에 의존하게 합니다.
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void handle(BudgetExhausted event) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.handle(event);
-		repository.update(campaign);
-	}
+    public void handle(BudgetExhausted event) {
+        Campaign campaign = repository.find(event.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.handle(event);
+        repository.update(campaign);
+    }
 }
 ```
 이벤트 처리기도 명령 실행기와 비슷하게 동작합니다. 리파지토리로부터 캠페인을 읽어와 상태를 변경한 다음 다시 저장합니다. 
@@ -137,19 +137,19 @@ public final class BudgetExhaustedEventHandler {
 ```java
 public final class Campaign {
 
-	private final UUID id;
-	private final long hospitalId;
-	...
-	private boolean isAdExposureAvailable;
-	private final List<ICampaignEvent<? extends ICampaignEventPayload>> events = new ArrayList<>();
-	...
+    private final UUID id;
+    private final long hospitalId;
+    ...
+    private boolean isAdExposureAvailable;
+    private final List<ICampaignEvent<? extends ICampaignEventPayload>> events = new ArrayList<>();
+    ...
 
-	public void handle(BudgetExhausted event) {
-		if (this.isAdExposureAvailable) {
-			this.isAdExposureAvailable = false;
-			this.events.add(new AdExposurePaused(...));
-		}
-	}
+    public void handle(BudgetExhausted event) {
+        if (this.isAdExposureAvailable) {
+            this.isAdExposureAvailable = false;
+            this.events.add(new AdExposurePaused(...));
+        }
+    }
 }
 ```
 캠페인은 예산 소진됨 이벤트를 수신하면, 광고 노출이 불가능하다는 것을 기록합니다. 만약 이전에는 광고 노출이 가능했다면, 광고 노출 중단됨(`AdExposurePaused`) 이벤트를 생성해 자체 Collection에 저장합니다.
@@ -159,11 +159,11 @@ public final class Campaign {
 ```java
 public interface ICampaignRepository {
 
-	Optional<Campaign> find(UUID id);
+    Optional<Campaign> find(UUID id);
 
-	void update(Campaign campaign);
-	
-	...
+    void update(Campaign campaign);
+    
+    ...
 }
 ```
 <br />
@@ -171,25 +171,25 @@ public interface ICampaignRepository {
 이제는 리파지토리 구현체를 확인해 보겠습니다. 캠페인을 저장하는 데이터베이스는 관계형 데이터베이스인 Amazon Aurora MySQL로, 리파지토리 구현체는 `JpaRepository`를 이용해 작성했습니다.
 ```java
 public class CampaignRepository implements ICampaignRepository {
-	
-	private final CampaignJpaRepository jpaRepository;
-	private final EventStore eventStore;
-	
-	@Override
-	public Optional<Campaign> find(UUID id) {
-		return jpaRepository.findById(id).map(CampaignDataModel::toEntity());
-	}
+    
+    private final CampaignJpaRepository jpaRepository;
+    private final EventStore eventStore;
+    
+    @Override
+    public Optional<Campaign> find(UUID id) {
+        return jpaRepository.findById(id).map(CampaignDataModel::toEntity());
+    }
 
-	@Transactional
-	@Override
-	public void update(Campaign campaign) {
-		CampaignDataModel dataModel = jpaRepository.findById(campaign.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		dataModel.update(campaign);
-		eventStore.store(campaign.getEvents());
-	}
+    @Transactional
+    @Override
+    public void update(Campaign campaign) {
+        CampaignDataModel dataModel = jpaRepository.findById(campaign.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        dataModel.update(campaign);
+        eventStore.store(campaign.getEvents());
+    }
 
-	...
+    ...
 }
 ```
 `update` 메서드는 캠페인을 수정하고, 캠페인 인스턴스가 가지고 있는 도메인 이벤트들을 데이터베이스에 저장합니다. 이 두 가지 동작은 모두 성공하거나, 모두 실패해야 합니다. 원자성을 확보하기 위해 `update` 메서드는 트랜잭션 내에서 수행되도록 합니다.
@@ -201,20 +201,20 @@ public class CampaignRepository implements ICampaignRepository {
 @Entity
 @Table(name = "campaigns")
 public class CampaignDataModel {
-	
-	@Id
-	@Column(columnDefinition = "BINARY(16)")
-	private UUID id;
+    
+    @Id
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long sequence;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long sequence;
 
-	private long hospitalId;
+    private long hospitalId;
 
-	@Enumerated(value = EnumType.STRING)
-	private Status status;
-	
-	...
+    @Enumerated(value = EnumType.STRING)
+    private Status status;
+    
+    ...
 
 }
 ```
@@ -230,19 +230,19 @@ public class CampaignDataModel {
 병원 관계자는 어드민을 통해 캠페인을 켤 수 있습니다. 캠페인을 켜는 명령이 들어오면 명령 실행기는 캠페인을 읽어와 상태를 변경한 다음 다시 저장합니다.
 ```java
 public final class SwitchOnCampaignCommandExecutor {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void execute(SwitchOnCampaign command) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.switchOn(command);
-		repository.update(campaign);
-	}
+    public void execute(SwitchOnCampaign command) {
+        Campaign campaign = repository.find(command.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.switchOn(command);
+        repository.update(campaign);
+    }
 }
 ```
 ![](/images/ioc/1.jpg)
@@ -251,19 +251,19 @@ public final class SwitchOnCampaignCommandExecutor {
 강남언니 유저들은 화면에 노출된 광고를 클릭할 수 있습니다. 노출, 클릭과 같은 성과가 발생하면, 병원은 그에 따른 광고비를 강남언니에 지불합니다. 만약 병원이 설정한 예산 이상의 광고비가 발생하면 예산 소진됨 이벤트가 발생하고, 예산 소진됨 이벤트를 처리하는 이벤트 처리기는 광고 노출을 중지하게 됩니다.
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void handle(BudgetExhausted event) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.handle(event);
-		repository.update(campaign);
-	}
+    public void handle(BudgetExhausted event) {
+        Campaign campaign = repository.find(event.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.handle(event);
+        repository.update(campaign);
+    }
 }
 ```
 ![](/images/ioc/2.jpg)
@@ -286,32 +286,32 @@ public final class BudgetExhaustedEventHandler {
 
 ```java
 public interface CampaignJpaRepository extends JpaRepository<CampaignDataModel, UUID> {
-	
-	@Lock(value = LockModeType.PESSIMISTIC_WRITE)
-  Optional<CampaignDataModel> findById(UUID id);
+    
+    @Lock(value = LockModeType.PESSIMISTIC_WRITE)
+    Optional<CampaignDataModel> findById(UUID id);
 
 }
 ```
 
 ```java
 public class CampaignRepository implements ICampaignRepository {
-	
-	private final CampaignJpaRepository jpaRepository;
-	private final EventStore eventStore;
-	
-	@Override
-	public Optional<Campaign> find(UUID id) {
-		return jpaRepository.findById(id).map(CampaignDataModel::toEntity());
-	}
+    
+    private final CampaignJpaRepository jpaRepository;
+    private final EventStore eventStore;
+    
+    @Override
+    public Optional<Campaign> find(UUID id) {
+        return jpaRepository.findById(id).map(CampaignDataModel::toEntity());
+    }
 
-	@Transactional
-	@Override
-	public void update(Campaign campaign) {
-		CampaignDataModel dataModel = jpaRepository.findById(campaign.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		dataModel.update(campaign);
-		eventStore.store(campaign.getEvents());
-	}
+    @Transactional
+    @Override
+    public void update(Campaign campaign) {
+        CampaignDataModel dataModel = jpaRepository.findById(campaign.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        dataModel.update(campaign);
+        eventStore.store(campaign.getEvents());
+    }
 }
 ```
 
@@ -324,39 +324,39 @@ public class CampaignRepository implements ICampaignRepository {
 
 ```java
 public final class SwitchOnCampaignCommandExecutor {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	@Transactional
-	public void execute(SwitchOnCampaign command) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.switchOn(command);
-		repository.save(campaign);
-	}
+    @Transactional
+    public void execute(SwitchOnCampaign command) {
+        Campaign campaign = repository.find(command.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.switchOn(command);
+        repository.save(campaign);
+    }
 }
 ```
 
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	@Transactional
-	public void handle(BudgetExhausted event) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.handle(event);
-		repository.update(campaign);
-	}
+    @Transactional
+    public void handle(BudgetExhausted event) {
+        Campaign campaign = repository.find(event.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.handle(event);
+        repository.update(campaign);
+    }
 }
 ```
 
@@ -395,23 +395,23 @@ Spring이 지원하는 기능들 중에는 도메인 모델에 사용해도 문�
 @Entity
 @Table(name = "campaigns")
 public class CampaignDataModel {
-	
-	@Id
-	@Column(columnDefinition = "BINARY(16)")
-	private UUID id;
+    
+    @Id
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long sequence;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long sequence;
 
-	private long hospitalId;
+    private long hospitalId;
 
-	@Enumerated(value = EnumType.STRING)
-	private Status status;
+    @Enumerated(value = EnumType.STRING)
+    private Status status;
 
-	@Version
-	private Long version;
-	
-	...
+    @Version
+    private Long version;
+    
+    ...
 
 }
 ```
@@ -423,37 +423,37 @@ public class CampaignDataModel {
 ![](/images/ioc/10.jpg)
 ```java
 public final class SwitchOnCampaignCommandExecutor {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void execute(SwitchOnCampaign command) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException()); // version 값을 받아 와야 합니다.
-		campaign.switchOn(command);
-		repository.update(campaign); // 읽어 온 version 값을 repository로 넘겨야 합니다.
-	}
+    public void execute(SwitchOnCampaign command) {
+        Campaign campaign = repository.find(command.getId())
+            .orElseThrow(() -> new AggregateNotFoundException()); // version 값을 받아 와야 합니다.
+        campaign.switchOn(command);
+        repository.update(campaign); // 읽어 온 version 값을 repository로 넘겨야 합니다.
+    }
 }
 ```
 
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void handle(BudgetExhausted event) {
-		Campaign campaign = repository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException()); // version 값을 받아 와야 합니다.
-		campaign.handle(event);
-		repository.update(campaign); // 읽어 온 version 값을 repository로 넘겨야 합니다.
-	}
+    public void handle(BudgetExhausted event) {
+        Campaign campaign = repository.find(event.getId())
+            .orElseThrow(() -> new AggregateNotFoundException()); // version 값을 받아 와야 합니다.
+        campaign.handle(event);
+        repository.update(campaign); // 읽어 온 version 값을 repository로 넘겨야 합니다.
+    }
 }
 ```
 <br />
@@ -463,18 +463,18 @@ public final class BudgetExhaustedEventHandler {
 ```java
 public final class Campaign {
 
-	private final UUID id;
-	private final long hospitalId;
-	private Status status;
-	...
-	private long version;
+    private final UUID id;
+    private final long hospitalId;
+    private Status status;
+    ...
+    private long version;
 
-	public void handle(BudgetExhausted event) {
-		if (this.isAdExposureAvailable) {
-			this.isAdExposureAvailable = false;
-			this.events.add(new AdExposurePaused(...));
-		}
-	}
+    public void handle(BudgetExhausted event) {
+        if (this.isAdExposureAvailable) {
+            this.isAdExposureAvailable = false;
+            this.events.add(new AdExposurePaused(...));
+        }
+    }
 }
 ```
 
@@ -483,40 +483,40 @@ public final class Campaign {
 @Entity
 @Table(name = "campaigns")
 public class CampaignDataModel {
-	
-	@Id
-	@Column(columnDefinition = "BINARY(16)")
-	private UUID id;
+    
+    @Id
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long sequence;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long sequence;
 
-	private long hospitalId;
+    private long hospitalId;
 
-	@Enumerated(value = EnumType.STRING)
-	private Status status;
+    @Enumerated(value = EnumType.STRING)
+    private Status status;
 
-	@Version
-	private Long version;
-	
-	...
+    @Version
+    private Long version;
+    
+    ...
 
-	public static CampaignDataModel create(Campaign entity) {
-		return new CamapaignDataModel(
-			entity.getId();
-			...,
-			entity.getVersion();
-		);
-	}
-	
-	public Campaign toEntity() {
-		return new Campaign(
-			id,
-			hospitalId,
-			...,
-			version
-		);
-	}
+    public static CampaignDataModel create(Campaign entity) {
+        return new CamapaignDataModel(
+            entity.getId();
+            ...,
+            entity.getVersion();
+        );
+    }
+    
+    public Campaign toEntity() {
+        return new Campaign(
+            id,
+            hospitalId,
+            ...,
+            version
+        );
+    }
 }
 ```
 
@@ -534,34 +534,34 @@ public class CampaignDataModel {
 
 ```java
 public interface ICampaignRepository {
-	...
-	void edit(EditCampaign command);
-	void switchOn(SwitchOnCampaign command);
-	void switchOff(SwitchOffCampaign command);
-	void handle(BudgetExhausted event);
-	...
+    ...
+    void edit(EditCampaign command);
+    void switchOn(SwitchOnCampaign command);
+    void switchOff(SwitchOffCampaign command);
+    void handle(BudgetExhausted event);
+    ...
 }
 ```
 
 ```java
 public class CampaignRepository implements ICampaignRepository {
-	
-	private final CampaignJpaRepository jpaRepository;
-	private final EventStore eventStore;
-	
-	...
+    
+    private final CampaignJpaRepository jpaRepository;
+    private final EventStore eventStore;
+    
+    ...
 
-	@Transactional
-	@Override
-	public void switchOn(SwitchOnCampaign command) {
-		validate(command);
-		Campaign campaign = jpaRepository.find(command.getId())
-			.orElseThrow(() -> new AggregateNotFoundException());
-		campaign.switchOn(command);
-		repository.save(campaign);
-	}
+    @Transactional
+    @Override
+    public void switchOn(SwitchOnCampaign command) {
+        validate(command);
+        Campaign campaign = jpaRepository.find(command.getId())
+            .orElseThrow(() -> new AggregateNotFoundException());
+        campaign.switchOn(command);
+        repository.save(campaign);
+    }
 
-	...
+    ...
 }
 ```
 
@@ -573,8 +573,8 @@ public class CampaignRepository implements ICampaignRepository {
 
 ```java
 public interface ICampaignRepository {
-	...
-	void update(UUID id, Consumer<Campaign> modifier);
+    ...
+    void update(UUID id, Consumer<Campaign> modifier);
 
 }
 ```
@@ -586,31 +586,31 @@ public interface ICampaignRepository {
 
 ```java
 public final class SwitchOnCampaignCommandExecutor {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public SwitchOnCampaignCommandExecutor(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void execute(SwitchOnCampaign command) {
-		repository.update(command.getId(), campaign -> campaign.switchOn(command));
-	}
+    public void execute(SwitchOnCampaign command) {
+        repository.update(command.getId(), campaign -> campaign.switchOn(command));
+    }
 }
 ```
 
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	public void handle(BudgetExhausted event) {
-		repository.update(event.getId(), campaign -> campaign.handle(event);
-	}
+    public void handle(BudgetExhausted event) {
+        repository.update(event.getId(), campaign -> campaign.handle(event);
+    }
 }
 ```
 <br />
@@ -619,22 +619,22 @@ public final class BudgetExhaustedEventHandler {
 
 ```java
 public class CampaignRepository implements ICampaignRepository {
-	
-	private final CampaignJpaRepository jpaRepository;
-	private final EventStore eventStore;
-	
-	...
+    
+    private final CampaignJpaRepository jpaRepository;
+    private final EventStore eventStore;
+    
+    ...
 
-	@Transactional
-	@Override
-	public void update(UUID id, Consumer<Campaign> modifier) {
-		CampaignDataModel dataModel = jpaRepository.findById(id)
-			.orElseThrow(AggregateNotFoundException::new);
-		Campaign campaign = dataModel.toEntity();
-    modifier.accept(campaign);
-		dataModel.update(campaign);
-		eventStore.store(campaign.getEvents());
-	}
+    @Transactional
+    @Override
+    public void update(UUID id, Consumer<Campaign> modifier) {
+        CampaignDataModel dataModel = jpaRepository.findById(id)
+            .orElseThrow(AggregateNotFoundException::new);
+        Campaign campaign = dataModel.toEntity();
+        modifier.accept(campaign);
+        dataModel.update(campaign);
+        eventStore.store(campaign.getEvents());
+    }
 }
 ```
 
@@ -650,14 +650,14 @@ public class CampaignRepository implements ICampaignRepository {
 
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler() {
-		this.repository = new CampaignRepository(...);
-	}
+    public BudgetExhaustedEventHandler() {
+        this.repository = new CampaignRepository(...);
+    }
 
-	...
+    ...
 }
 ```
 <br />
@@ -666,14 +666,14 @@ public final class BudgetExhaustedEventHandler {
 
 ```java
 public final class BudgetExhaustedEventHandler {
-	
-	private final ICampaignRepository repository;
+    
+    private final ICampaignRepository repository;
 
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		this.repository = repository;
-	}
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        this.repository = repository;
+    }
 
-	...
+    ...
 }
 ```
 
@@ -681,21 +681,21 @@ public final class BudgetExhaustedEventHandler {
 @Configuration
 public class AdManagerServiceConfiguration {
 
-	@Bean
-	public ICampaignRepository campaignRepository(
-		CampaignJpaRepository jpaRepository,
-		JpaEventStore jpaEventStore
-	) {
-		return new CampaignRepository(
-			jpaRepository,
-			new CampaignEventStore(jpaEventStore)
-		);
-	}
+    @Bean
+    public ICampaignRepository campaignRepository(
+        CampaignJpaRepository jpaRepository,
+        JpaEventStore jpaEventStore
+    ) {
+        return new CampaignRepository(
+            jpaRepository,
+            new CampaignEventStore(jpaEventStore)
+        );
+    }
 
-	@Bean
-	public BudgetExhaustedEventHandler(ICampaignRepository repository) {
-		return new BudgetExhaustedEventHandler(repository);
-	}
+    @Bean
+    public BudgetExhaustedEventHandler(ICampaignRepository repository) {
+        return new BudgetExhaustedEventHandler(repository);
+    }
 }
 ```
 
